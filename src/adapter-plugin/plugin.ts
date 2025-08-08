@@ -4,6 +4,7 @@ import { z } from 'zod';
 import {
   AgentMode,
   coreAccountPlugin,
+  coreConsensusPlugin,
   coreHTSPlugin,
   coreQueriesPlugin,
   ElizaOSAdapter,
@@ -46,6 +47,7 @@ const adapterHederaPlugin: Plugin = {
           coreHTSPlugin,
           coreQueriesPlugin,
           coreAccountPlugin,
+          coreConsensusPlugin,
         ],
         context: {
           mode: AgentMode.AUTONOMOUS,
