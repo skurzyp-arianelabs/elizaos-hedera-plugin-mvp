@@ -1,7 +1,15 @@
 import type { Plugin } from '@elizaos/core';
 import { logger } from '@elizaos/core';
 import { z } from 'zod';
-import { createTokenActions } from "hedera-agent-kit";
+import {
+  AgentMode,
+  coreAccountPlugin,
+  coreHTSPlugin,
+  coreQueriesPlugin,
+  ElizaOSAdapter,
+  ToolDiscovery
+} from "hedera-agent-kit";
+import { Client } from '@hashgraph/sdk';
 
 const configSchema = z.object({
   HEDERA_PRIVATE_KEY: z.string(),
@@ -26,12 +34,37 @@ const adapterHederaPlugin: Plugin = {
         if (value) process.env[key] = value;
       }
 
-      // Register actions with runtime after initialization
-      const tokenActions = createTokenActions(runtime);
-      if (Array.isArray(tokenActions)) {
-        tokenActions.forEach(action => runtime.registerAction(action));
+      // Initialize Hedera client
+      const client = Client.forTestnet().setOperator(
+        runtime.getSetting("HEDERA_ACCOUNT_ID"),
+        runtime.getSetting("HEDERA_PRIVATE_KEY"),
+      );
+
+      // Initialize configuration
+      const configuration = {
+        plugins: [
+          coreHTSPlugin,
+          coreQueriesPlugin,
+          coreAccountPlugin,
+        ],
+        context: {
+          mode: AgentMode.AUTONOMOUS,
+        },
+      };
+
+      // Initialize tools
+      const toolDiscovery = ToolDiscovery.createFromConfiguration(configuration);
+      const tools = toolDiscovery.getAllTools(configuration.context, configuration);
+
+      // Create the adapter and get actions
+      const adapter = new ElizaOSAdapter(client, configuration.context, tools);
+
+      // Register the actions in the runtime
+      const actions = adapter.getActions();
+      if (Array.isArray(actions)) {
+        actions.forEach(action => runtime.registerAction(action));
       } else {
-        runtime.registerAction(tokenActions);
+        runtime.registerAction(actions);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -42,9 +75,7 @@ const adapterHederaPlugin: Plugin = {
       throw error;
     }
   },
-
-  // Leave actions empty initially - they'll be registered in init()
-  actions: [],
+  actions: [], // actions are registered in the plugin init()
   providers: [],
   evaluators: [],
   services: [],
