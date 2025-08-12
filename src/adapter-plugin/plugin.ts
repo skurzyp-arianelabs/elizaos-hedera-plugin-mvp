@@ -11,6 +11,7 @@ import {
   ToolDiscovery
 } from "hedera-agent-kit";
 import { Client } from '@hashgraph/sdk';
+import { HederaAccountDetails } from "./provider/hederaAccountDetails.ts";
 
 const configSchema = z.object({
   HEDERA_PRIVATE_KEY: z.string(),
@@ -53,6 +54,9 @@ const adapterHederaPlugin: Plugin = {
           mode: AgentMode.AUTONOMOUS,
         },
       };
+
+      // Initialize and register provider
+      runtime.registerProvider(HederaAccountDetails);
 
       // Initialize tools
       const toolDiscovery = ToolDiscovery.createFromConfiguration(configuration);
